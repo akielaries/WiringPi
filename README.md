@@ -1,4 +1,4 @@
-:warning: (11/04/2023) From [@akielaries](https://github.com/akielaries): I added some updates to this library regarding updates and features I deemed
+:warning: (11/04/2023) From [@akielaries](https://github.com/akielaries): I added some updates to this library regarding features I deemed
 useful from my own experience and use of it. This fork of the WiringPi library I will support to my capacity but not to
 the degree of Gordon and the fellow WiringPi contributors. 
 
