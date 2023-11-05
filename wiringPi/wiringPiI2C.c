@@ -51,6 +51,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <asm/ioctl.h>
 
@@ -191,6 +192,50 @@ int wiringPiI2CWriteReg16 (int fd, int reg, int value)
 
 
 /*
+ *wiringPiI2CScan:
+ *  This function gets the available I2C addresses on a given bus and stores them
+ *  inside an array
+ *********************************************************************************
+ */
+
+void wiringPiI2CScan(const char *bus,
+              unsigned char found_addrs[],
+              size_t *num_found_addrs) 
+{
+    int fd ;
+
+    // initialize number of found addresses
+    *num_found_addrs = 0;
+
+    // iterate through possible I2C address 0-127
+    for (int address = 0x00; address <= 0x7F; address++) {
+        // oattempt to open bus
+        fd = open(bus, O_RDWR);
+        if (fd < 0) {
+            perror("[!] Failed to open I2C bus");
+            return;
+        }
+
+        // nothing at this address
+        if (ioctl(fd, I2C_SLAVE, address) < 0) {
+            close(fd);
+            continue;
+        }
+
+        // attempt to read one byte from each address to determine if available
+        unsigned char buffer;
+        if (read(fd, &buffer, 1) == 1) {
+            // device found and responded, store the address
+            found_addrs[*num_found_addrs] = address;
+            // increment number of found addresses
+            (*num_found_addrs)++;
+        }
+        // close file
+        close(fd);
+    }
+}
+
+/*
  * wiringPiI2CSetupInterface:
  *	Undocumented access to set the interface explicitly - might be used
  *	for the Pi's 2nd I2C interface...
@@ -200,16 +245,42 @@ int wiringPiI2CWriteReg16 (int fd, int reg, int value)
 int wiringPiI2CSetupInterface (const char *device, int devId)
 {
   int fd ;
+  // max possible # of available addresses on a given I2C bus is 127
+  unsigned char found_addrs[128];
+  size_t num_found_addrs = 0;
+  // scan bus for available I2C addresses
+  wiringPiI2CScan(device, found_addrs, &num_found_addrs);
+  // check if values in found_addrs are present in the passed in addresses[]
+  // TODO tidy up these functions so they integrate nicely with existing 
+  // WiringPi functions!
+  for (size_t i = 0; i < 1; i++) {
+    unsigned char addr = devId;
+    int valid = 0;
+    // cmp current address against current in found_addrs
+    for (size_t j = 0; j < num_found_addrs; j++) {
+      if (addr == found_addrs[j]) {
+        valid = 1;
+        break;
+      }
+    }
 
+    // mismatch of available and specified addresses!!
+    if (!valid) {
+      printf("[!] Invalid address specified: 0x%02X\n", addr);
+      return wiringPiFailure (WPI_ALMOST, "Unable to open I2C device (0x%02X): %s\n", addr, strerror (errno));
+      }
+    }
+
+  // TODO THIS NEEDS TO BE REMOVED/REWORKED
   if ((fd = open (device, O_RDWR)) < 0)
     return wiringPiFailure (WPI_ALMOST, "Unable to open I2C device: %s\n", strerror (errno)) ;
 
   if (ioctl (fd, I2C_SLAVE, devId) < 0)
     return wiringPiFailure (WPI_ALMOST, "Unable to select I2C device: %s\n", strerror (errno)) ;
-
-  return fd ;
+  
+  else
+    return fd ;
 }
-
 
 /*
  * wiringPiI2CSetup:
@@ -223,11 +294,12 @@ int wiringPiI2CSetup (const int devId)
   const char *device ;
 
   rev = piGpioLayout () ;
-
+  
   if (rev == 1)
     device = "/dev/i2c-0" ;
   else
     device = "/dev/i2c-1" ;
 
+  // I2C bus, I2C address
   return wiringPiI2CSetupInterface (device, devId) ;
 }
