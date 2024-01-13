@@ -1,7 +1,4 @@
-:warning: (11/04/2023) From [@akielaries](https://github.com/akielaries): I added some updates to this library regarding edits and features I deemed
-useful from my own experience and use of it. This fork of the WiringPi library I will support to my capacity.
-
-:warning: (10/31/2023) This library was deprecated by its author in August 2019. As of 31st October 2023 nobody has shown an interest in properly maintaining it. Between this, and changes to GPIO in Rasberry Pi OS Bookworm and on the Raspberry Pi 5, this project is going nowhere. It has been archived to more clearly indicate this status.
+:warning: (11/04/2023) My own personal fork of WiringPi that I will add occasional changes to
 
 WiringPi (Unofficial Mirror/Fork)
 =================================
